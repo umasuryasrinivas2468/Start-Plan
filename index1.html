@@ -2,76 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Starter Plan License</title>
+  <title>Activate License</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; }
-    input, button { padding: 10px; margin: 8px 0; width: 100%; }
-    .key-box { margin-top: 15px; padding: 10px; border: 1px dashed #333; text-align: center; }
+    body { font-family: Arial, sans-serif; padding: 40px; background: #f8f9fa; }
+    .container { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);}
+    input, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    #licenseKey { font-weight: bold; color: green; word-break: break-word; }
   </style>
 </head>
 <body>
-  <h2>Starter Plan License Activation</h2>
-  <form id="licenseForm">
-    <label>Email:</label>
-    <input type="email" id="email" required />
-    <button type="submit">Generate License</button>
-  </form>
-
-  <div class="key-box" id="keyBox" style="display:none;">
+  <div class="container">
+    <h2>Activate Your License</h2>
+    <form id="licenseForm">
+      <label>Email:</label>
+      <input type="email" id="email" required>
+      <button type="submit">Generate License</button>
+    </form>
     <p>Your License Key:</p>
-    <strong id="licenseKey"></strong>
-    <br /><br />
-    <button onclick="copyKey()">Copy Key</button>
+    <p id="licenseKey">---</p>
+    <button id="copyBtn" style="display:none;">Copy Key</button>
   </div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUOLf7ts_g94ToeN_gTcTybjxTycCbwreMg9X8VNlxT1YJcU-sjPX8hcsT_00gjvHgOg/exec";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbycnVOdZ32SLRcTlwT0vND8wJ_nCLmuXP_uxc4n3WKDMruOpP3pKaIOwQcWDzGV_64fdA/exec";
 
-    function generateKey() {
-      // Starter key = 12 digit (e.g., ACZ12AB345INA)
-      const prefix = "ACZ";
-      const num = Math.floor(Math.random() * 90 + 10); // 10-99
-      const letters = String.fromCharCode(65 + Math.floor(Math.random()*26)) +
-                      String.fromCharCode(65 + Math.floor(Math.random()*26));
-      const randNum = Math.floor(1000 + Math.random() * 9000); // 4 digits
-      const suffix = "INA" + Math.floor(Math.random() * 90 + 10);
-      return `${prefix}${num}${letters}${randNum}${suffix}`;
+    function generateLicenseKey() {
+      const randNum = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+      const randAlpha = () => String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      return `ACZ${randNum(10,99)}${randAlpha()}${randAlpha()}${randNum(1000,9999)}INA${randNum(10,99)}`;
     }
 
-    document.getElementById("licenseForm").addEventListener("submit", async function(e){
+    document.getElementById("licenseForm").addEventListener("submit", function(e) {
       e.preventDefault();
       const email = document.getElementById("email").value;
-      const license = generateKey();
+      const license = generateLicenseKey();
       const today = new Date().toISOString().split("T")[0];
       const due = new Date();
       due.setMonth(due.getMonth() + 1);
       const dueDate = due.toISOString().split("T")[0];
 
-      try {
-        const res = await fetch(SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, license, today, due: dueDate })
-        });
-        const data = await res.json();
-        if(data.status === "success"){
-          document.getElementById("licenseKey").textContent = license;
-          document.getElementById("keyBox").style.display = "block";
+      // Display license
+      document.getElementById("licenseKey").textContent = license;
+      document.getElementById("copyBtn").style.display = "block";
+
+      // Save to Google Sheets
+      fetch(scriptURL, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, license, today, due: dueDate })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          alert("✅ Saved to Google Sheet successfully!");
         } else {
-          alert("Save failed: " + data.message);
+          alert("⚠️ Failed: " + data.message);
         }
-      } catch(err) {
-        console.error(err);
-        alert("Error saving license. Check console.");
-      }
+      })
+      .catch(err => {
+        console.error("Error:", err);
+        alert("❌ Error saving to Google Sheets");
+      });
     });
 
-    function copyKey(){
+    // Copy license
+    document.getElementById("copyBtn").addEventListener("click", function() {
       const key = document.getElementById("licenseKey").textContent;
       navigator.clipboard.writeText(key)
-        .then(() => alert("Key copied!"))
-        .catch(err => console.error("Copy failed", err));
-    }
+        .then(() => alert("📋 License Key Copied!"))
+        .catch(err => alert("Copy failed: " + err));
+    });
   </script>
 </body>
 </html>
+
