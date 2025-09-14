@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Starter Plan License</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; }
+    input, button { padding: 10px; margin: 8px 0; width: 100%; }
+    .key-box { margin-top: 15px; padding: 10px; border: 1px dashed #333; text-align: center; }
+  </style>
+</head>
+<body>
+  <h2>Starter Plan License Activation</h2>
+  <form id="licenseForm">
+    <label>Email:</label>
+    <input type="email" id="email" required />
+    <button type="submit">Generate License</button>
+  </form>
+
+  <div class="key-box" id="keyBox" style="display:none;">
+    <p>Your License Key:</p>
+    <strong id="licenseKey"></strong>
+    <br /><br />
+    <button onclick="copyKey()">Copy Key</button>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUOLf7ts_g94ToeN_gTcTybjxTycCbwreMg9X8VNlxT1YJcU-sjPX8hcsT_00gjvHgOg/exec";
+
+    function generateKey() {
+      // Starter key = 12 digit (e.g., ACZ12AB345INA)
+      const prefix = "ACZ";
+      const num = Math.floor(Math.random() * 90 + 10); // 10-99
+      const letters = String.fromCharCode(65 + Math.floor(Math.random()*26)) +
+                      String.fromCharCode(65 + Math.floor(Math.random()*26));
+      const randNum = Math.floor(1000 + Math.random() * 9000); // 4 digits
+      const suffix = "INA" + Math.floor(Math.random() * 90 + 10);
+      return `${prefix}${num}${letters}${randNum}${suffix}`;
+    }
+
+    document.getElementById("licenseForm").addEventListener("submit", async function(e){
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const license = generateKey();
+      const today = new Date().toISOString().split("T")[0];
+      const due = new Date();
+      due.setMonth(due.getMonth() + 1);
+      const dueDate = due.toISOString().split("T")[0];
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, license, today, due: dueDate })
+        });
+        const data = await res.json();
+        if(data.status === "success"){
+          document.getElementById("licenseKey").textContent = license;
+          document.getElementById("keyBox").style.display = "block";
+        } else {
+          alert("Save failed: " + data.message);
+        }
+      } catch(err) {
+        console.error(err);
+        alert("Error saving license. Check console.");
+      }
+    });
+
+    function copyKey(){
+      const key = document.getElementById("licenseKey").textContent;
+      navigator.clipboard.writeText(key)
+        .then(() => alert("Key copied!"))
+        .catch(err => console.error("Copy failed", err));
+    }
+  </script>
+</body>
+</html>
